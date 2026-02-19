@@ -15,10 +15,25 @@ body {
 .card {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
   padding: 1rem;
   margin-bottom: 1rem;
 }
+.section-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  color: inherit;
+}
+.section-toggle h2 { margin: 0; }
+.chevron { font-size: 1.25rem; color: #667085; }
+.section-content { margin-top: .8rem; }
+.hidden { display: none; }
+.section-actions { display: flex; justify-content: flex-end; margin-top: .75rem; }
 .row { display: flex; gap: .75rem; flex-wrap: wrap; align-items: flex-end; }
 .row.compact input { min-width: 180px; }
 label { display: flex; flex-direction: column; font-size: .9rem; gap: .3rem; }

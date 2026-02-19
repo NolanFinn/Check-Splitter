@@ -30,7 +30,8 @@ const el = {
   payerSelect: document.querySelector('#payer-select'),
   assignmentList: document.querySelector('#assignment-list'),
   settlementList: document.querySelector('#settlement-list'),
-  personDetailList: document.querySelector('#person-detail-list')
+  personDetailList: document.querySelector('#person-detail-list'),
+  sections: [...document.querySelectorAll('.section')]
 };
 
 bindEvents();
@@ -48,7 +49,9 @@ function bindEvents() {
       state.tipAmount = toMoney(el.tipAmount.value);
       state.feeAmount = toMoney(el.feeAmount.value);
       persist();
-      render();
+      renderSummary(calculateShares());
+      renderSettlement(calculateShares());
+      renderPersonDetails(calculateShares());
     });
   }
 
@@ -60,8 +63,57 @@ function bindEvents() {
   el.payerSelect.addEventListener('change', () => {
     state.payer = el.payerSelect.value;
     persist();
-    render();
+    renderSettlement(calculateShares());
   });
+
+  setupSectionControls();
+}
+
+function setupSectionControls() {
+  el.sections.forEach((section) => {
+    const toggle = section.querySelector('.section-toggle');
+    const content = section.querySelector('.section-content');
+    const chevron = section.querySelector('.chevron');
+    const sectionName = section.dataset.section;
+
+    toggle.addEventListener('click', () => {
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      setSectionOpen(sectionName, !expanded);
+    });
+
+    const nextBtn = section.querySelector('.next-section');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        const next = section.dataset.next;
+        if (!next) return;
+        setSectionOpen(next, true);
+        const nextEl = document.querySelector(`.section[data-section="${next}"]`);
+        if (nextEl) nextEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+
+    if (sectionName !== 'create') {
+      content.classList.add('hidden');
+      toggle.setAttribute('aria-expanded', 'false');
+      chevron.textContent = '▸';
+    } else {
+      content.classList.remove('hidden');
+      toggle.setAttribute('aria-expanded', 'true');
+      chevron.textContent = '▾';
+    }
+  });
+}
+
+function setSectionOpen(sectionName, open) {
+  const section = document.querySelector(`.section[data-section="${sectionName}"]`);
+  if (!section) return;
+  const toggle = section.querySelector('.section-toggle');
+  const content = section.querySelector('.section-content');
+  const chevron = section.querySelector('.chevron');
+
+  toggle.setAttribute('aria-expanded', String(open));
+  content.classList.toggle('hidden', !open);
+  chevron.textContent = open ? '▾' : '▸';
 }
 
 function addItem() {
@@ -69,9 +121,7 @@ function addItem() {
   const quantity = Number(el.itemQty.value);
   const price = Number(el.itemPrice.value);
 
-  if (!description) {
-    return setItemError('Please enter an item name before saving.');
-  }
+  if (!description) return setItemError('Please enter an item name before saving.');
   if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
     return setItemError('Quantity must be a whole number greater than 0.');
   }
@@ -79,15 +129,15 @@ function addItem() {
     return setItemError('Price must be a valid non-negative amount.');
   }
 
-  const item = { id: crypto.randomUUID(), description, quantity, price: toMoney(price) };
-  state.items.push(item);
-  state.assignments[item.id] = [...state.people];
+  state.items.push({ id: crypto.randomUUID(), description, quantity, price: toMoney(price) });
+  state.assignments[state.items[state.items.length - 1].id] = [...state.people];
 
   el.itemForm.reset();
   el.itemQty.value = '1';
   setItemError('');
   persist();
   render();
+  el.itemName.focus();
 }
 
 function setItemError(message) {
@@ -109,16 +159,18 @@ function addPerson() {
   for (const item of state.items) {
     if (!state.assignments[item.id]) state.assignments[item.id] = [];
   }
+
   el.personForm.reset();
   el.personError.textContent = '';
   persist();
   render();
+  el.personName.focus();
 }
 
 function render() {
-  el.taxAmount.value = money(state.taxAmount);
-  el.tipAmount.value = money(state.tipAmount);
-  el.feeAmount.value = money(state.feeAmount);
+  el.taxAmount.value = state.taxAmount === 0 ? '0' : String(state.taxAmount);
+  el.tipAmount.value = state.tipAmount === 0 ? '0' : String(state.tipAmount);
+  el.feeAmount.value = state.feeAmount === 0 ? '0' : String(state.feeAmount);
 
   renderItems();
   renderPeople();
@@ -139,14 +191,16 @@ function renderItems() {
       <td>${item.description}</td>
       <td>$${money(item.price)}</td>
       <td>$${money(item.price / item.quantity)}</td>
-      <td><button class="remove" data-id="${item.id}">Remove</button></td>
+      <td><button type="button" class="remove" data-id="${item.id}">Remove</button></td>
     `;
+
     tr.querySelector('button').addEventListener('click', () => {
       state.items = state.items.filter((i) => i.id !== item.id);
       delete state.assignments[item.id];
       persist();
       render();
     });
+
     el.itemsBody.appendChild(tr);
   });
 }
@@ -174,15 +228,16 @@ function renderAssignments() {
 
     const checks = document.createElement('div');
     checks.className = 'people-checks';
+
     state.people.forEach((person) => {
       const checked = (state.assignments[item.id] || []).includes(person);
       const id = `${item.id}-${person}`;
       const label = document.createElement('label');
       label.setAttribute('for', id);
       label.innerHTML = `<input id="${id}" type="checkbox" ${checked ? 'checked' : ''} /> ${person}`;
-      label.querySelector('input').addEventListener('change', (e) => {
+      label.querySelector('input').addEventListener('change', (event) => {
         const selected = new Set(state.assignments[item.id] || []);
-        if (e.target.checked) selected.add(person);
+        if (event.target.checked) selected.add(person);
         else selected.delete(person);
         state.assignments[item.id] = [...selected];
         persist();
@@ -202,8 +257,8 @@ function calculateShares() {
   const tipCents = Math.round(state.tipAmount * 100);
   const feeCents = Math.round(state.feeAmount * 100);
 
-  const baseByPerson = Object.fromEntries(state.people.map((p) => [p, 0]));
-  const itemBreakdown = Object.fromEntries(state.people.map((p) => [p, []]));
+  const baseByPerson = Object.fromEntries(state.people.map((person) => [person, 0]));
+  const itemBreakdown = Object.fromEntries(state.people.map((person) => [person, []]));
 
   state.items.forEach((item) => {
     const selected = state.assignments[item.id] || [];
@@ -212,33 +267,38 @@ function calculateShares() {
     const total = Math.round(item.price * 100);
     const raw = total / selected.length;
     const floor = Math.floor(raw);
-    let remainder = total - floor * selected.length;
+    const fractions = selected
+      .map((person) => ({ person, frac: raw - floor }))
+      .sort((a, b) => b.frac - a.frac || a.person.localeCompare(b.person));
 
-    const fractions = selected.map((person) => ({ person, frac: raw - floor }));
-    fractions.sort((a, b) => b.frac - a.frac || a.person.localeCompare(b.person));
-
-    for (const person of selected) {
+    selected.forEach((person) => {
       baseByPerson[person] += floor;
-    }
+    });
+
+    let remainder = total - floor * selected.length;
     for (let i = 0; i < remainder; i += 1) {
       baseByPerson[fractions[i].person] += 1;
     }
 
-    for (const person of selected) {
-      const portion = baseByPerson[person] - (itemBreakdown[person].reduce((s, x) => s + x.cents, 0));
+    selected.forEach((person) => {
+      const assignedSoFar = itemBreakdown[person].reduce((sum, detail) => sum + detail.cents, 0);
+      const portion = baseByPerson[person] - assignedSoFar;
       itemBreakdown[person].push({ label: `${item.description} share`, cents: portion });
-    }
+    });
   });
 
-  const participants = state.people.filter((p) => baseByPerson[p] > 0);
-  const addOnByPerson = Object.fromEntries(state.people.map((p) => [p, { tax: 0, tip: 0, fee: 0 }]));
+  const participants = state.people.filter((person) => baseByPerson[person] > 0);
+  const addOnByPerson = Object.fromEntries(state.people.map((person) => [person, { tax: 0, tip: 0, fee: 0 }]));
 
-  distributeProportionally(participants, baseByPerson, taxCents, (p, cents) => (addOnByPerson[p].tax += cents));
-  distributeProportionally(participants, baseByPerson, tipCents, (p, cents) => (addOnByPerson[p].tip += cents));
-  distributeProportionally(participants, baseByPerson, feeCents, (p, cents) => (addOnByPerson[p].fee += cents));
+  distributeProportionally(participants, baseByPerson, taxCents, (person, cents) => (addOnByPerson[person].tax += cents));
+  distributeProportionally(participants, baseByPerson, tipCents, (person, cents) => (addOnByPerson[person].tip += cents));
+  distributeProportionally(participants, baseByPerson, feeCents, (person, cents) => (addOnByPerson[person].fee += cents));
 
   const totalByPerson = Object.fromEntries(
-    state.people.map((p) => [p, baseByPerson[p] + addOnByPerson[p].tax + addOnByPerson[p].tip + addOnByPerson[p].fee])
+    state.people.map((person) => [
+      person,
+      baseByPerson[person] + addOnByPerson[person].tax + addOnByPerson[person].tip + addOnByPerson[person].fee
+    ])
   );
 
   return {
@@ -248,7 +308,6 @@ function calculateShares() {
     feeCents,
     totalCents: subtotalCents + taxCents + tipCents + feeCents,
     taxPercent: subtotalCents > 0 ? (taxCents / subtotalCents) * 100 : 0,
-    baseByPerson,
     addOnByPerson,
     totalByPerson,
     itemBreakdown
@@ -257,7 +316,7 @@ function calculateShares() {
 
 function distributeProportionally(participants, baseByPerson, totalCents, assignFn) {
   if (participants.length === 0 || totalCents === 0) return;
-  const baseTotal = participants.reduce((sum, p) => sum + baseByPerson[p], 0);
+  const baseTotal = participants.reduce((sum, person) => sum + baseByPerson[person], 0);
   if (baseTotal === 0) return;
 
   const allocations = participants.map((person) => {
@@ -266,11 +325,11 @@ function distributeProportionally(participants, baseByPerson, totalCents, assign
     return { person, floor, frac: raw - floor };
   });
 
-  const assigned = allocations.reduce((sum, a) => sum + a.floor, 0);
-  let remaining = totalCents - assigned;
+  allocations.forEach((entry) => assignFn(entry.person, entry.floor));
+
+  let remaining = totalCents - allocations.reduce((sum, entry) => sum + entry.floor, 0);
   allocations.sort((a, b) => b.frac - a.frac || a.person.localeCompare(b.person));
 
-  allocations.forEach((a) => assignFn(a.person, a.floor));
   for (let i = 0; i < remaining; i += 1) {
     assignFn(allocations[i].person, 1);
   }
@@ -293,32 +352,27 @@ function renderSettlement(results) {
     .map((person) => `<li>${person} owes ${payer} <strong>$${moneyFromCents(results.totalByPerson[person])}</strong></li>`)
     .join('');
 
-  el.settlementList.innerHTML = lines
-    ? `<ul>${lines}</ul>`
-    : '<p class="muted">No one owes anything yet.</p>';
+  el.settlementList.innerHTML = lines ? `<ul>${lines}</ul>` : '<p class="muted">No one owes anything yet.</p>';
 }
 
 function renderPersonDetails(results) {
   el.personDetailList.innerHTML = '';
+
   state.people.forEach((person) => {
     const card = document.createElement('article');
     card.className = 'person-card';
 
-    const items = results.itemBreakdown[person] || [];
-    const itemLines = items.length
-      ? `<ul>${items.map((item) => `<li>${item.label}: $${moneyFromCents(item.cents)}</li>`).join('')}</ul>`
+    const details = results.itemBreakdown[person] || [];
+    const itemsMarkup = details.length
+      ? `<ul>${details.map((item) => `<li>${item.label}: $${moneyFromCents(item.cents)}</li>`).join('')}</ul>`
       : '<p class="muted">No items assigned.</p>';
-
-    const tax = results.addOnByPerson[person].tax;
-    const tip = results.addOnByPerson[person].tip;
-    const fee = results.addOnByPerson[person].fee;
 
     card.innerHTML = `
       <h3>${person}</h3>
-      ${itemLines}
-      <p>Tax: $${moneyFromCents(tax)}</p>
-      <p>Tip: $${moneyFromCents(tip)}</p>
-      <p>Fees: $${moneyFromCents(fee)}</p>
+      ${itemsMarkup}
+      <p>Tax: $${moneyFromCents(results.addOnByPerson[person].tax)}</p>
+      <p>Tip: $${moneyFromCents(results.addOnByPerson[person].tip)}</p>
+      <p>Fees: $${moneyFromCents(results.addOnByPerson[person].fee)}</p>
       <p><strong>Total: $${moneyFromCents(results.totalByPerson[person])}</strong></p>
     `;
 
@@ -331,9 +385,11 @@ function toMoney(value) {
   if (!Number.isFinite(num)) return 0;
   return Math.round(num * 100) / 100;
 }
+
 function money(value) {
   return toMoney(value).toFixed(2);
 }
+
 function moneyFromCents(cents) {
   return (cents / 100).toFixed(2);
 }

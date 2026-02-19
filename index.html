@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check Splitter</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Check Splitter</h1>
+
+    <section class="card section" data-section="create" data-next="people">
+      <button type="button" class="section-toggle" aria-expanded="true" aria-controls="section-create">
+        <h2>Create Check</h2>
+        <span class="chevron">▾</span>
+      </button>
+      <div id="section-create" class="section-content">
+        <form id="item-form" class="row">
+          <label>
+            Item name
+            <input id="item-name" type="text" placeholder="Nachos" required />
+          </label>
+          <label>
+            Quantity
+            <input id="item-qty" type="number" inputmode="numeric" min="1" step="1" value="1" required />
+          </label>
+          <label>
+            Price (total)
+            <input id="item-price" type="number" inputmode="decimal" min="0" step="0.01" placeholder="15.00" required />
+          </label>
+          <button type="submit">Add item</button>
+        </form>
+        <p id="item-error" class="error" aria-live="polite"></p>
+
+        <table>
+          <thead>
+            <tr><th>Qty</th><th>Description</th><th>Total</th><th>Unit</th><th></th></tr>
+          </thead>
+          <tbody id="items-body"></tbody>
+        </table>
+
+        <div class="totals">
+          <label>Tax amount <input id="tax-amount" type="number" inputmode="decimal" min="0" step="0.01" value="0" /></label>
+          <label>Tip amount <input id="tip-amount" type="number" inputmode="decimal" min="0" step="0.01" value="0" /></label>
+          <label>Other fees <input id="fee-amount" type="number" inputmode="decimal" min="0" step="0.01" value="0" /></label>
+        </div>
+        <div class="summary" id="check-summary"></div>
+        <div class="section-actions"><button type="button" class="subtle next-section">Next</button></div>
+      </div>
+    </section>
+
+    <section class="card section" data-section="people" data-next="assignments">
+      <button type="button" class="section-toggle" aria-expanded="false" aria-controls="section-people">
+        <h2>People</h2>
+        <span class="chevron">▸</span>
+      </button>
+      <div id="section-people" class="section-content hidden">
+        <form id="person-form" class="row compact">
+          <label>
+            Add person
+            <input id="person-name" type="text" placeholder="Jack" />
+          </label>
+          <button type="submit">Add</button>
+        </form>
+        <p id="person-error" class="error" aria-live="polite"></p>
+        <div id="people-list" class="chips"></div>
+        <label>
+          Payer
+          <select id="payer-select"></select>
+        </label>
+        <div class="section-actions"><button type="button" class="subtle next-section">Next</button></div>
+      </div>
+    </section>
+
+    <section class="card section" data-section="assignments" data-next="settlement">
+      <button type="button" class="section-toggle" aria-expanded="false" aria-controls="section-assignments">
+        <h2>Assign People to Items</h2>
+        <span class="chevron">▸</span>
+      </button>
+      <div id="section-assignments" class="section-content hidden">
+        <p class="muted">Equal split among selected people.</p>
+        <div id="assignment-list"></div>
+        <div class="section-actions"><button type="button" class="subtle next-section">Next</button></div>
+      </div>
+    </section>
+
+    <section class="card section" data-section="settlement" data-next="details">
+      <button type="button" class="section-toggle" aria-expanded="false" aria-controls="section-settlement">
+        <h2>Settlement (Simple Mode)</h2>
+        <span class="chevron">▸</span>
+      </button>
+      <div id="section-settlement" class="section-content hidden">
+        <div id="settlement-list"></div>
+        <div class="section-actions"><button type="button" class="subtle next-section">Next</button></div>
+      </div>
+    </section>
+
+    <section class="card section" data-section="details">
+      <button type="button" class="section-toggle" aria-expanded="false" aria-controls="section-details">
+        <h2>Per-Person Details</h2>
+        <span class="chevron">▸</span>
+      </button>
+      <div id="section-details" class="section-content hidden">
+        <div id="person-detail-list" class="grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

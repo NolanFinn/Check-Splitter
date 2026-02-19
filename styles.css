@@ -1,0 +1,62 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+body {
+  margin: 0;
+  background: #f5f7fb;
+  color: #1a2433;
+}
+.container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1rem 2rem;
+}
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.section-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  color: inherit;
+}
+.section-toggle h2 { margin: 0; }
+.chevron { font-size: 1.25rem; color: #667085; }
+.section-content { margin-top: .8rem; }
+.hidden { display: none; }
+.section-actions { display: flex; justify-content: flex-end; margin-top: .75rem; }
+.row { display: flex; gap: .75rem; flex-wrap: wrap; align-items: flex-end; }
+.row.compact input { min-width: 180px; }
+label { display: flex; flex-direction: column; font-size: .9rem; gap: .3rem; }
+input, select, button {
+  padding: .5rem .6rem;
+  border: 1px solid #d4dbe8;
+  border-radius: 8px;
+  font-size: .95rem;
+}
+button { cursor: pointer; background: #155eef; color: white; border-color: #155eef; }
+button.subtle { background: #eef2ff; color: #233876; border-color: #c7d2fe; }
+button.remove { background: #e11d48; border-color: #e11d48; }
+table { width: 100%; border-collapse: collapse; margin-top: .75rem; }
+th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #e8ecf4; }
+.error { color: #b42318; min-height: 1.1rem; margin-top: .5rem; }
+.summary { margin-top: .75rem; font-weight: 600; }
+.totals { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .75rem; }
+.chips { display: flex; gap: .5rem; flex-wrap: wrap; margin: .75rem 0; }
+.chip { background: #eef4ff; border-radius: 999px; padding: .3rem .7rem; }
+.assignment { border: 1px solid #e8ecf4; border-radius: 8px; padding: .75rem; margin-bottom: .6rem; }
+.people-checks { display: flex; gap: .65rem; flex-wrap: wrap; margin-top: .4rem; }
+.muted { color: #667085; margin: .25rem 0 .75rem; }
+.grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.person-card { border: 1px solid #e8ecf4; border-radius: 8px; padding: .75rem; }
+.person-card h3 { margin: 0 0 .5rem; }
+ul { margin: .25rem 0; padding-left: 1.2rem; }

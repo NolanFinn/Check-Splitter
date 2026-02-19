@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check Splitter</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Check Splitter</h1>
+
+    <section class="card">
+      <h2>Create Check</h2>
+      <form id="item-form" class="row">
+        <label>
+          Item name
+          <input id="item-name" type="text" placeholder="Nachos" required />
+        </label>
+        <label>
+          Quantity
+          <input id="item-qty" type="number" min="1" step="1" value="1" required />
+        </label>
+        <label>
+          Price (total)
+          <input id="item-price" type="number" min="0" step="0.01" placeholder="15.00" required />
+        </label>
+        <button type="submit">Add item</button>
+      </form>
+      <p id="item-error" class="error" aria-live="polite"></p>
+
+      <table>
+        <thead>
+          <tr><th>Qty</th><th>Description</th><th>Total</th><th>Unit</th><th></th></tr>
+        </thead>
+        <tbody id="items-body"></tbody>
+      </table>
+
+      <div class="totals">
+        <label>Tax amount <input id="tax-amount" type="number" min="0" step="0.01" value="0" /></label>
+        <label>Tip amount <input id="tip-amount" type="number" min="0" step="0.01" value="0" /></label>
+        <label>Other fees <input id="fee-amount" type="number" min="0" step="0.01" value="0" /></label>
+      </div>
+      <div class="summary" id="check-summary"></div>
+    </section>
+
+    <section class="card">
+      <h2>People</h2>
+      <form id="person-form" class="row compact">
+        <label>
+          Add person
+          <input id="person-name" type="text" placeholder="Jack" />
+        </label>
+        <button type="submit">Add</button>
+      </form>
+      <p id="person-error" class="error" aria-live="polite"></p>
+      <div id="people-list" class="chips"></div>
+      <label>
+        Payer
+        <select id="payer-select"></select>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Assign People to Items</h2>
+      <p class="muted">Equal split among selected people.</p>
+      <div id="assignment-list"></div>
+    </section>
+
+    <section class="card">
+      <h2>Settlement (Simple Mode)</h2>
+      <div id="settlement-list"></div>
+    </section>
+
+    <section class="card">
+      <h2>Per-Person Details</h2>
+      <div id="person-detail-list" class="grid"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -14,10 +14,10 @@ let state = loadState();
 
 const el = {
   newCheckBtn: document.querySelector('#new-check-btn'),
-  itemForm: document.querySelector('#item-form'),
-  itemName: document.querySelector('#item-name'),
-  itemQty: document.querySelector('#item-qty'),
-  itemPrice: document.querySelector('#item-price'),
+  addItemBtn: document.querySelector('#add-item-btn'),
+  newItemName: document.querySelector('#new-item-name'),
+  newItemQty: document.querySelector('#new-item-qty'),
+  newItemPrice: document.querySelector('#new-item-price'),
   itemError: document.querySelector('#item-error'),
   itemsBody: document.querySelector('#items-body'),
   taxAmount: document.querySelector('#tax-amount'),
@@ -40,20 +40,24 @@ render();
 function bindEvents() {
   el.newCheckBtn.addEventListener('click', resetCheck);
 
-  el.itemForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    addItem();
-  });
-  el.itemName.addEventListener('keydown', (event) => {
+  el.addItemBtn.addEventListener('click', addItem);
+
+  el.newItemName.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      el.itemQty.focus();
+      el.newItemQty.focus();
     }
   });
-  el.itemQty.addEventListener('keydown', (event) => {
+  el.newItemQty.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      el.itemPrice.focus();
+      el.newItemPrice.focus();
+    }
+  });
+  el.newItemPrice.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      addItem();
     }
   });
 
@@ -91,7 +95,7 @@ function resetCheck() {
   persist();
   render();
   setSectionOpen('create', true);
-  el.itemName.focus();
+  el.newItemName.focus();
 }
 
 function setupSectionControls() {
@@ -127,9 +131,9 @@ function setSectionOpen(sectionName, open) {
 }
 
 function addItem() {
-  const description = el.itemName.value.trim();
-  const quantity = Number(el.itemQty.value);
-  const price = Number(el.itemPrice.value);
+  const description = el.newItemName.value.trim();
+  const quantity = Number(el.newItemQty.value);
+  const price = Number(el.newItemPrice.value);
 
   if (!description) return setItemError('Please enter an item name before saving.');
   if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
@@ -143,12 +147,13 @@ function addItem() {
   state.items.push({ id, description, quantity, price: toMoney(price) });
   state.assignments[id] = [...state.people];
 
-  el.itemForm.reset();
-  el.itemQty.value = '1';
+  el.newItemName.value = '';
+  el.newItemQty.value = '1';
+  el.newItemPrice.value = '';
   setItemError('');
   persist();
   render();
-  el.itemName.focus();
+  el.newItemName.focus();
 }
 
 function addPerson() {

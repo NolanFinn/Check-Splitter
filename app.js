@@ -20,7 +20,6 @@ const el = {
   itemPrice: document.querySelector('#item-price'),
   itemError: document.querySelector('#item-error'),
   itemsBody: document.querySelector('#items-body'),
-  itemsMobile: document.querySelector('#items-mobile'),
   taxAmount: document.querySelector('#tax-amount'),
   tipAmount: document.querySelector('#tip-amount'),
   feeAmount: document.querySelector('#fee-amount'),
@@ -230,25 +229,9 @@ function renderDerived() {
 
 function renderItems() {
   el.itemsBody.innerHTML = '';
-  el.itemsMobile.innerHTML = '';
-
   state.items.forEach((item) => {
-    const updateItem = (nextQtyRaw, nextDescRaw, nextPriceRaw, unitNode) => {
-      const nextQty = Number(nextQtyRaw);
-      const nextDesc = nextDescRaw.trim();
-      const nextPrice = Number(nextPriceRaw);
-
-      if (Number.isInteger(nextQty) && nextQty > 0) item.quantity = nextQty;
-      if (nextDesc) item.description = nextDesc;
-      if (Number.isFinite(nextPrice) && nextPrice >= 0) item.price = toMoney(nextPrice);
-
-      if (unitNode) unitNode.textContent = `$${money(item.price / item.quantity)}`;
-      persist();
-      renderDerived();
-    };
-
-    const desktopRow = document.createElement('tr');
-    desktopRow.innerHTML = `
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
       <td><input class="inline-input inline-qty" type="number" inputmode="numeric" min="1" step="1" value="${item.quantity}" aria-label="Quantity for ${item.description}" /></td>
       <td><input class="inline-input" type="text" value="${escapeHtml(item.description)}" aria-label="Description for item" /></td>
       <td><input class="inline-input inline-price" type="number" inputmode="decimal" min="0" step="0.01" value="${money(item.price)}" aria-label="Price for ${item.description}" /></td>
@@ -256,57 +239,40 @@ function renderItems() {
       <td><button type="button" class="icon-btn remove" aria-label="Remove item">×</button></td>
     `;
 
-    const dQty = desktopRow.querySelector('.inline-qty');
-    const dDesc = desktopRow.querySelector('td:nth-child(2) .inline-input');
-    const dPrice = desktopRow.querySelector('.inline-price');
-    const dUnit = desktopRow.querySelector('.unit-cell');
-    const dSync = () => updateItem(dQty.value, dDesc.value, dPrice.value, dUnit);
-    dQty.addEventListener('change', dSync);
-    dQty.addEventListener('blur', dSync);
-    dDesc.addEventListener('change', dSync);
-    dDesc.addEventListener('blur', dSync);
-    dPrice.addEventListener('change', dSync);
-    dPrice.addEventListener('blur', dSync);
-    desktopRow.querySelector('button').addEventListener('click', () => removeItem(item.id));
+    const qtyInput = tr.querySelector('.inline-qty');
+    const descInput = tr.querySelector('td:nth-child(2) .inline-input');
+    const priceInput = tr.querySelector('.inline-price');
+    const unitCell = tr.querySelector('.unit-cell');
 
-    el.itemsBody.appendChild(desktopRow);
+    const syncItem = () => {
+      const nextQty = Number(qtyInput.value);
+      const nextDesc = descInput.value.trim();
+      const nextPrice = Number(priceInput.value);
 
-    const mobileCard = document.createElement('article');
-    mobileCard.className = 'mobile-item-card';
-    mobileCard.innerHTML = `
-      <div class="mobile-item-top">
-        <input class="inline-input" type="text" value="${escapeHtml(item.description)}" aria-label="Description for item" />
-        <button type="button" class="icon-btn remove" aria-label="Remove item">×</button>
-      </div>
-      <div class="mobile-item-grid">
-        <label>Qty<input class="inline-input inline-qty" type="number" inputmode="numeric" min="1" step="1" value="${item.quantity}" /></label>
-        <label>Total<input class="inline-input inline-price" type="number" inputmode="decimal" min="0" step="0.01" value="${money(item.price)}" /></label>
-        <p class="mobile-unit muted">Unit $<span>${money(item.price / item.quantity)}</span></p>
-      </div>
-    `;
+      if (Number.isInteger(nextQty) && nextQty > 0) item.quantity = nextQty;
+      if (nextDesc) item.description = nextDesc;
+      if (Number.isFinite(nextPrice) && nextPrice >= 0) item.price = toMoney(nextPrice);
 
-    const mDesc = mobileCard.querySelector('.mobile-item-top input');
-    const mQty = mobileCard.querySelector('.mobile-item-grid .inline-qty');
-    const mPrice = mobileCard.querySelector('.mobile-item-grid .inline-price');
-    const mUnitSpan = mobileCard.querySelector('.mobile-unit span');
-    const mSync = () => updateItem(mQty.value, mDesc.value, mPrice.value, mUnitSpan);
-    mQty.addEventListener('change', mSync);
-    mQty.addEventListener('blur', mSync);
-    mDesc.addEventListener('change', mSync);
-    mDesc.addEventListener('blur', mSync);
-    mPrice.addEventListener('change', mSync);
-    mPrice.addEventListener('blur', mSync);
-    mobileCard.querySelector('button').addEventListener('click', () => removeItem(item.id));
+      unitCell.textContent = `$${money(item.price / item.quantity)}`;
+      persist();
+      renderDerived();
+    };
 
-    el.itemsMobile.appendChild(mobileCard);
+    qtyInput.addEventListener('change', syncItem);
+    qtyInput.addEventListener('blur', syncItem);
+    descInput.addEventListener('change', syncItem);
+    descInput.addEventListener('blur', syncItem);
+    priceInput.addEventListener('change', syncItem);
+    priceInput.addEventListener('blur', syncItem);
+
+    tr.querySelector('button').addEventListener('click', () => {
+      state.items = state.items.filter((i) => i.id !== item.id);
+      delete state.assignments[item.id];
+      persist();
+      render();
+    });
+    el.itemsBody.appendChild(tr);
   });
-}
-
-function removeItem(itemId) {
-  state.items = state.items.filter((item) => item.id !== itemId);
-  delete state.assignments[itemId];
-  persist();
-  render();
 }
 
 
@@ -378,7 +344,7 @@ function renderAssignments() {
 function selectionSummary(selected) {
   if (!selected || selected.length === 0) return 'Unassigned';
   if (selected.length === 1) return selected[0];
-  return 'Multiple';
+  return `${selected.length} 👥`;
 }
 
 function calculateShares() {
@@ -432,6 +398,7 @@ function calculateShares() {
     feeCents,
     totalCents: subtotalCents + taxCents + tipCents + feeCents,
     taxPercent: subtotalCents > 0 ? (taxCents / subtotalCents) * 100 : 0,
+    tipPercent: subtotalCents > 0 ? (tipCents / subtotalCents) * 100 : 0,
     addOnByPerson,
     totalByPerson,
     itemBreakdown
@@ -459,14 +426,13 @@ function distributeProportionally(participants, baseByPerson, totalCents, assign
 
 function renderSummary(results) {
   el.checkSummary.innerHTML = `
-    <div class="summary-row"><span>Subtotal</span><strong>$${moneyFromCents(results.subtotalCents)}</strong></div>
-    <div class="summary-row"><span>Tax (${results.taxPercent.toFixed(2)}%)</span><strong>$${moneyFromCents(results.taxCents)}</strong></div>
-    <div class="summary-row"><span>Tip</span><strong>$${moneyFromCents(results.tipCents)}</strong></div>
-    <div class="summary-row"><span>Fees</span><strong>$${moneyFromCents(results.feeCents)}</strong></div>
-    <div class="summary-row total"><span>Total due</span><strong>$${moneyFromCents(results.totalCents)}</strong></div>
+    Subtotal: $${moneyFromCents(results.subtotalCents)} ·
+    Tax: $${moneyFromCents(results.taxCents)} (${results.taxPercent.toFixed(2)}%) ·
+    Tip: $${moneyFromCents(results.tipCents)} (${results.tipPercent.toFixed(2)}%) ·
+    Fees: $${moneyFromCents(results.feeCents)} ·
+    <strong>Total due: $${moneyFromCents(results.totalCents)}</strong>
   `;
 }
-
 
 function renderFinalBreakdown(results) {
   el.finalBreakdownList.innerHTML = '';

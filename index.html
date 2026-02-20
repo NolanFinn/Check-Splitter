@@ -19,33 +19,31 @@
         <span class="chevron">▾</span>
       </button>
       <div id="section-create" class="section-content">
-        <table class="items-table desktop-only">
-          <thead>
-            <tr><th>Qty</th><th>Description</th><th>Total</th><th>Unit</th><th></th></tr>
-          </thead>
-          <tbody id="items-body"></tbody>
-        </table>
-
-        <div id="items-mobile" class="mobile-only"></div>
-
-        <form id="item-form" class="item-composer">
-          <label>
-            Description
-            <input id="item-name" type="text" enterkeyhint="next" placeholder="e.g. Nachos" required />
-          </label>
-          <div class="composer-grid">
-            <label>
-              Qty
-              <input id="item-qty" type="number" inputmode="numeric" enterkeyhint="next" min="1" step="1" value="1" required />
-            </label>
-            <label>
-              Total
-              <input id="item-price" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="0.01" placeholder="e.g. 15.00" required />
-            </label>
-          </div>
+        <form id="item-form">
+          <table class="create-table">
+            <colgroup>
+              <col class="col-qty" />
+              <col class="col-desc" />
+              <col class="col-total" />
+              <col class="col-unit" />
+              <col class="col-remove" />
+            </colgroup>
+            <thead>
+              <tr><th>Qty</th><th>Description</th><th>Total</th><th>Unit</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input id="item-qty" class="inline-input inline-qty" type="number" inputmode="numeric" enterkeyhint="next" min="1" step="1" value="1" required /></td>
+                <td><input id="item-name" class="inline-input" type="text" enterkeyhint="next" placeholder="e.g. Nachos" required /></td>
+                <td><input id="item-price" class="inline-input inline-price" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="0.01" placeholder="e.g. 15.00" required /></td>
+                <td class="unit-cell muted">Auto</td>
+                <td></td>
+              </tr>
+            </tbody>
+            <tbody id="items-body"></tbody>
+          </table>
           <button type="submit" class="cta-full">Add item</button>
         </form>
-
         <p id="item-error" class="error" aria-live="polite"></p>
 
         <div class="totals">

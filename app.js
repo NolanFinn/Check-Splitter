@@ -235,15 +235,12 @@ function renderItems() {
       <td><input class="inline-input inline-qty" type="number" inputmode="numeric" min="1" step="1" value="${item.quantity}" aria-label="Quantity for ${item.description}" /></td>
       <td><input class="inline-input" type="text" value="${escapeHtml(item.description)}" aria-label="Description for item" /></td>
       <td><input class="inline-input inline-price" type="number" inputmode="decimal" min="0" step="0.01" value="${money(item.price)}" aria-label="Price for ${item.description}" /></td>
-      <td class="unit-cell">$${money(item.price / item.quantity)}</td>
       <td><button type="button" class="icon-btn remove" aria-label="Remove item">×</button></td>
     `;
 
     const qtyInput = tr.querySelector('.inline-qty');
     const descInput = tr.querySelector('td:nth-child(2) .inline-input');
     const priceInput = tr.querySelector('.inline-price');
-    const unitCell = tr.querySelector('.unit-cell');
-
     const syncItem = () => {
       const nextQty = Number(qtyInput.value);
       const nextDesc = descInput.value.trim();
@@ -253,7 +250,6 @@ function renderItems() {
       if (nextDesc) item.description = nextDesc;
       if (Number.isFinite(nextPrice) && nextPrice >= 0) item.price = toMoney(nextPrice);
 
-      unitCell.textContent = `$${money(item.price / item.quantity)}`;
       persist();
       renderDerived();
     };
@@ -426,11 +422,11 @@ function distributeProportionally(participants, baseByPerson, totalCents, assign
 
 function renderSummary(results) {
   el.checkSummary.innerHTML = `
-    Subtotal: $${moneyFromCents(results.subtotalCents)} ·
-    Tax: $${moneyFromCents(results.taxCents)} (${results.taxPercent.toFixed(2)}%) ·
-    Tip: $${moneyFromCents(results.tipCents)} (${results.tipPercent.toFixed(2)}%) ·
-    Fees: $${moneyFromCents(results.feeCents)} ·
-    <strong>Total due: $${moneyFromCents(results.totalCents)}</strong>
+    <div class="receipt-line"><span>Subtotal</span><span>$${moneyFromCents(results.subtotalCents)}</span></div>
+    <div class="receipt-line"><span>Tax (${results.taxPercent.toFixed(2)}%)</span><span>$${moneyFromCents(results.taxCents)}</span></div>
+    <div class="receipt-line"><span>Tip (${results.tipPercent.toFixed(2)}%)</span><span>$${moneyFromCents(results.tipCents)}</span></div>
+    <div class="receipt-line"><span>Fees</span><span>$${moneyFromCents(results.feeCents)}</span></div>
+    <div class="receipt-line receipt-total"><span>Total due</span><span>$${moneyFromCents(results.totalCents)}</span></div>
   `;
 }
 

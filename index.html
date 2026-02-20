@@ -45,9 +45,11 @@
         <p id="item-error" class="error" aria-live="polite"></p>
 
         <div class="totals">
+          <label>Subtotal <input id="subtotal-amount" type="text" inputmode="decimal" value="0.00" readonly /></label>
           <label>Tax <input id="tax-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 4.50" /></label>
           <label>Tip <input id="tip-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 18.00" /></label>
           <label>Other fees <input id="fee-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 3.00" /></label>
+          <label>Total due <input id="total-due-amount" type="text" inputmode="decimal" value="0.00" readonly /></label>
         </div>
         <div class="summary" id="check-summary"></div>
         <div class="section-actions"><button type="button" class="subtle next-section">Next</button></div>

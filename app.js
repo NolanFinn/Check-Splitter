@@ -20,9 +20,11 @@ const el = {
   itemPrice: document.querySelector('#item-price'),
   itemError: document.querySelector('#item-error'),
   itemsBody: document.querySelector('#items-body'),
+  subtotalAmount: document.querySelector('#subtotal-amount'),
   taxAmount: document.querySelector('#tax-amount'),
   tipAmount: document.querySelector('#tip-amount'),
   feeAmount: document.querySelector('#fee-amount'),
+  totalDueAmount: document.querySelector('#total-due-amount'),
   checkSummary: document.querySelector('#check-summary'),
   personForm: document.querySelector('#person-form'),
   personName: document.querySelector('#person-name'),
@@ -66,9 +68,28 @@ function bindEvents() {
       el.itemPrice.focus();
     }
   });
+  el.itemPrice.addEventListener('blur', () => {
+    const raw = el.itemPrice.value.trim();
+    if (!raw) return;
+    el.itemPrice.value = money(raw);
+  });
 
   for (const field of [el.taxAmount, el.tipAmount, el.feeAmount]) {
     field.addEventListener('input', () => {
+      state.taxAmount = toMoney(el.taxAmount.value);
+      state.tipAmount = toMoney(el.tipAmount.value);
+      state.feeAmount = toMoney(el.feeAmount.value);
+      persist();
+      renderDerived();
+    });
+    field.addEventListener('blur', () => {
+      const raw = field.value.trim();
+      if (!raw) {
+        field.value = '';
+        return;
+      }
+      const formatted = money(raw);
+      field.value = formatted;
       state.taxAmount = toMoney(el.taxAmount.value);
       state.tipAmount = toMoney(el.tipAmount.value);
       state.feeAmount = toMoney(el.feeAmount.value);
@@ -211,9 +232,9 @@ function setItemError(message) {
 }
 
 function render() {
-  el.taxAmount.value = state.taxAmount === 0 ? '' : String(state.taxAmount);
-  el.tipAmount.value = state.tipAmount === 0 ? '' : String(state.tipAmount);
-  el.feeAmount.value = state.feeAmount === 0 ? '' : String(state.feeAmount);
+  el.taxAmount.value = state.taxAmount === 0 ? '' : money(state.taxAmount);
+  el.tipAmount.value = state.tipAmount === 0 ? '' : money(state.tipAmount);
+  el.feeAmount.value = state.feeAmount === 0 ? '' : money(state.feeAmount);
 
   renderItems();
   renderPeople();
@@ -248,7 +269,10 @@ function renderItems() {
 
       if (Number.isInteger(nextQty) && nextQty > 0) item.quantity = nextQty;
       if (nextDesc) item.description = nextDesc;
-      if (Number.isFinite(nextPrice) && nextPrice >= 0) item.price = toMoney(nextPrice);
+      if (Number.isFinite(nextPrice) && nextPrice >= 0) {
+        item.price = toMoney(nextPrice);
+        priceInput.value = money(item.price);
+      }
 
       persist();
       renderDerived();
@@ -295,7 +319,7 @@ function renderAssignments() {
     wrap.className = 'assignment-item';
     wrap.innerHTML = `
       <button type="button" class="assignment-header" aria-expanded="false">
-        <span>${item.description} · $${money(item.price)}</span>
+        <span>${item.description} (${item.quantity}) - $${money(item.price)}</span>
         <span class="meta">${selectionSummary(selected)} ▸</span>
       </button>
       <div class="assignment-content hidden">
@@ -421,13 +445,9 @@ function distributeProportionally(participants, baseByPerson, totalCents, assign
 }
 
 function renderSummary(results) {
-  el.checkSummary.innerHTML = `
-    <div class="receipt-line"><span>Subtotal</span><span>$${moneyFromCents(results.subtotalCents)}</span></div>
-    <div class="receipt-line"><span>Tax (${results.taxPercent.toFixed(2)}%)</span><span>$${moneyFromCents(results.taxCents)}</span></div>
-    <div class="receipt-line"><span>Tip (${results.tipPercent.toFixed(2)}%)</span><span>$${moneyFromCents(results.tipCents)}</span></div>
-    <div class="receipt-line"><span>Fees</span><span>$${moneyFromCents(results.feeCents)}</span></div>
-    <div class="receipt-line receipt-total"><span>Total due</span><span>$${moneyFromCents(results.totalCents)}</span></div>
-  `;
+  el.subtotalAmount.value = moneyFromCents(results.subtotalCents);
+  el.totalDueAmount.value = moneyFromCents(results.totalCents);
+  el.checkSummary.innerHTML = `<p class="muted">Tax: ${results.taxPercent.toFixed(2)}% · Tip: ${results.tipPercent.toFixed(2)}%</p>`;
 }
 
 function renderFinalBreakdown(results) {

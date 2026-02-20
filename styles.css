@@ -26,10 +26,10 @@ button.remove { background: #f8d7da; color: #b42318; border-color: #f2b8be; }
 table { width: 100%; border-collapse: collapse; margin-top: .75rem; }
 th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #e8ecf4; }
 .error { color: #b42318; min-height: 1.1rem; margin-top: .5rem; }
-.summary { margin-top: .75rem; }
-.receipt-line { display:flex; justify-content:space-between; gap:.75rem; padding:.12rem 0; font-weight:500; }
-.receipt-total { border-top:1px dashed #d0d5dd; margin-top:.2rem; padding-top:.35rem; font-weight:700; }
+.summary { margin-top: .35rem; }
 .totals { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .75rem; }
+.totals label { min-width: 170px; flex: 1 1 170px; }
+input[readonly] { background: #f8fafc; color: #344054; }
 .assignment-item { border: 1px solid #e8ecf4; border-radius: 8px; margin-bottom: .6rem; overflow: hidden; }
 .assignment-header { width: 100%; display: flex; justify-content: space-between; align-items: center; border: 0; background: #f8faff; color: #1a2433; padding: .7rem .8rem; }
 .assignment-header .meta { color: #667085; font-size: .9rem; }

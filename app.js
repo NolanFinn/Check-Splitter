@@ -13,6 +13,7 @@ const defaultState = {
 let state = loadState();
 
 const el = {
+  newCheckBtn: document.querySelector('#new-check-btn'),
   itemForm: document.querySelector('#item-form'),
   itemName: document.querySelector('#item-name'),
   itemQty: document.querySelector('#item-qty'),
@@ -29,8 +30,7 @@ const el = {
   peopleBody: document.querySelector('#people-body'),
   payerSelect: document.querySelector('#payer-select'),
   assignmentList: document.querySelector('#assignment-list'),
-  settlementList: document.querySelector('#settlement-list'),
-  personDetailList: document.querySelector('#person-detail-list'),
+  finalBreakdownList: document.querySelector('#final-breakdown-list'),
   sections: [...document.querySelectorAll('.section')]
 };
 
@@ -38,6 +38,8 @@ bindEvents();
 render();
 
 function bindEvents() {
+  el.newCheckBtn.addEventListener('click', resetCheck);
+
   el.itemForm.addEventListener('submit', (event) => {
     event.preventDefault();
     addItem();
@@ -73,10 +75,23 @@ function bindEvents() {
   el.payerSelect.addEventListener('change', () => {
     state.payer = el.payerSelect.value;
     persist();
-    renderSettlement(calculateShares());
+    renderFinalBreakdown(calculateShares());
   });
 
   setupSectionControls();
+}
+
+function resetCheck() {
+  const shouldClear = window.confirm(
+    'Start a new check? This clears all current data and it will not be saved.'
+  );
+  if (!shouldClear) return;
+
+  state = structuredClone(defaultState);
+  persist();
+  render();
+  setSectionOpen('create', true);
+  el.itemName.focus();
 }
 
 function setupSectionControls() {
@@ -163,9 +178,7 @@ function removePerson(person) {
   }
 
   state.people = state.people.filter((p) => p !== person);
-  if (state.payer === person) {
-    state.payer = state.people[0];
-  }
+  if (state.payer === person) state.payer = state.people[0];
 
   state.items.forEach((item) => {
     const selected = state.assignments[item.id] || [];
@@ -194,8 +207,7 @@ function render() {
 function renderDerived() {
   const results = calculateShares();
   renderSummary(results);
-  renderSettlement(results);
-  renderPersonDetails(results);
+  renderFinalBreakdown(results);
 }
 
 function renderItems() {
@@ -203,12 +215,49 @@ function renderItems() {
   state.items.forEach((item) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${item.quantity}</td>
-      <td>${item.description}</td>
-      <td>$${money(item.price)}</td>
+      <td><input type="number" class="inline-edit inline-qty" min="1" step="1" inputmode="numeric" value="${item.quantity}" aria-label="Edit quantity for ${item.description}" /></td>
+      <td><input type="text" class="inline-edit" value="${escapeHtml(item.description)}" aria-label="Edit description for ${item.description}" /></td>
+      <td><input type="number" class="inline-edit inline-price" min="0" step="0.01" inputmode="decimal" value="${money(item.price)}" aria-label="Edit total price for ${item.description}" /></td>
       <td>$${money(item.price / item.quantity)}</td>
-      <td><button type="button" class="remove">Remove</button></td>
+      <td><button type="button" class="icon-btn remove" aria-label="Remove item">×</button></td>
     `;
+
+    const qtyInput = tr.querySelector('.inline-qty');
+    qtyInput.addEventListener('change', () => {
+      const qty = Number(qtyInput.value);
+      if (!Number.isInteger(qty) || qty <= 0) {
+        qtyInput.value = String(item.quantity);
+        return;
+      }
+      item.quantity = qty;
+      persist();
+      render();
+    });
+
+    const descriptionInput = tr.querySelector('input[type="text"]');
+    descriptionInput.addEventListener('change', () => {
+      const description = descriptionInput.value.trim();
+      if (!description) {
+        descriptionInput.value = item.description;
+        return;
+      }
+      item.description = description;
+      persist();
+      render();
+    });
+
+    const priceInput = tr.querySelector('.inline-price');
+    priceInput.addEventListener('change', () => {
+      const price = Number(priceInput.value);
+      if (!Number.isFinite(price) || price < 0) {
+        priceInput.value = money(item.price);
+        return;
+      }
+      item.price = toMoney(price);
+      persist();
+      render();
+    });
+
     tr.querySelector('button').addEventListener('click', () => {
       state.items = state.items.filter((i) => i.id !== item.id);
       delete state.assignments[item.id];
@@ -223,7 +272,7 @@ function renderPeople() {
   el.peopleBody.innerHTML = '';
   state.people.forEach((person) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${person}</td><td><button type="button" class="remove">Remove</button></td>`;
+    tr.innerHTML = `<td>${person}</td><td><button type="button" class="icon-btn remove" aria-label="Remove person">×</button></td>`;
     tr.querySelector('button').addEventListener('click', () => removePerson(person));
     el.peopleBody.appendChild(tr);
   });
@@ -238,14 +287,12 @@ function renderAssignments() {
 
   state.items.forEach((item) => {
     const selected = state.assignments[item.id] || [];
-    const summary = selected.length === 0 ? 'Unassigned' : selected.length === 1 ? selected[0] : 'Multiple';
-
     const wrap = document.createElement('article');
     wrap.className = 'assignment-item';
     wrap.innerHTML = `
       <button type="button" class="assignment-header" aria-expanded="false">
         <span>${item.description} · $${money(item.price)}</span>
-        <span class="meta">${summary} ▸</span>
+        <span class="meta">${selectionSummary(selected)} ▸</span>
       </button>
       <div class="assignment-content hidden">
         <div class="pill-wrap"></div>
@@ -261,7 +308,7 @@ function renderAssignments() {
       const open = header.getAttribute('aria-expanded') !== 'true';
       header.setAttribute('aria-expanded', String(open));
       content.classList.toggle('hidden', !open);
-      meta.textContent = `${summary} ${open ? '▾' : '▸'}`;
+      meta.textContent = `${selectionSummary(state.assignments[item.id] || [])} ${open ? '▾' : '▸'}`;
     });
 
     state.people.forEach((person) => {
@@ -274,14 +321,31 @@ function renderAssignments() {
         if (current.has(person)) current.delete(person);
         else current.add(person);
         state.assignments[item.id] = [...current];
+        btn.classList.toggle('active', current.has(person));
+        meta.textContent = `${selectionSummary(state.assignments[item.id])} ${header.getAttribute('aria-expanded') === 'true' ? '▾' : '▸'}`;
         persist();
-        render();
+        renderDerived();
       });
       pillWrap.appendChild(btn);
     });
 
     el.assignmentList.appendChild(wrap);
   });
+}
+
+function selectionSummary(selected) {
+  if (!selected || selected.length === 0) return 'Unassigned';
+  if (selected.length === 1) return selected[0];
+  return `${selected.length} 👥`;
+}
+
+function escapeHtml(value) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 function calculateShares() {
@@ -370,34 +434,43 @@ function renderSummary(results) {
   `;
 }
 
-function renderSettlement(results) {
-  const payer = state.payer;
-  const lines = state.people
-    .filter((person) => person !== payer && results.totalByPerson[person] > 0)
-    .map((person) => `<li>${person} owes ${payer} <strong>$${moneyFromCents(results.totalByPerson[person])}</strong></li>`)
-    .join('');
-  el.settlementList.innerHTML = lines ? `<ul>${lines}</ul>` : '<p class="muted">No one owes anything yet.</p>';
-}
+function renderFinalBreakdown(results) {
+  el.finalBreakdownList.innerHTML = '';
 
-function renderPersonDetails(results) {
-  el.personDetailList.innerHTML = '';
   state.people.forEach((person) => {
-    const card = document.createElement('article');
-    card.className = 'person-card';
-    const items = results.itemBreakdown[person] || [];
-    const itemLines = items.length
-      ? `<ul>${items.map((item) => `<li>${item.label}: $${moneyFromCents(item.cents)}</li>`).join('')}</ul>`
-      : '<p class="muted">No items assigned.</p>';
+    const total = results.totalByPerson[person] || 0;
+    const itemLines = (results.itemBreakdown[person] || [])
+      .map((item) => `<li>${item.label}: $${moneyFromCents(item.cents)}</li>`)
+      .join('');
 
-    card.innerHTML = `
-      <h3>${person}</h3>
-      ${itemLines}
-      <p>Tax: $${moneyFromCents(results.addOnByPerson[person].tax)}</p>
-      <p>Tip: $${moneyFromCents(results.addOnByPerson[person].tip)}</p>
-      <p>Fees: $${moneyFromCents(results.addOnByPerson[person].fee)}</p>
-      <p><strong>Total: $${moneyFromCents(results.totalByPerson[person])}</strong></p>
+    const row = document.createElement('article');
+    row.className = 'assignment-item';
+    row.innerHTML = `
+      <button type="button" class="assignment-header" aria-expanded="false">
+        <span>${person}</span>
+        <span class="meta">$${moneyFromCents(total)} ▸</span>
+      </button>
+      <div class="assignment-content hidden">
+        ${itemLines ? `<ul>${itemLines}</ul>` : '<p class="muted">No items assigned.</p>'}
+        <p>Tax: $${moneyFromCents(results.addOnByPerson[person].tax)}</p>
+        <p>Tip: $${moneyFromCents(results.addOnByPerson[person].tip)}</p>
+        <p>Fees: $${moneyFromCents(results.addOnByPerson[person].fee)}</p>
+        <p><strong>Total: $${moneyFromCents(total)}</strong></p>
+      </div>
     `;
-    el.personDetailList.appendChild(card);
+
+    const header = row.querySelector('.assignment-header');
+    const content = row.querySelector('.assignment-content');
+    const meta = row.querySelector('.meta');
+
+    header.addEventListener('click', () => {
+      const open = header.getAttribute('aria-expanded') !== 'true';
+      header.setAttribute('aria-expanded', String(open));
+      content.classList.toggle('hidden', !open);
+      meta.textContent = `$${moneyFromCents(total)} ${open ? '▾' : '▸'}`;
+    });
+
+    el.finalBreakdownList.appendChild(row);
   });
 }
 

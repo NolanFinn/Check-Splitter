@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check Splitter</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="page-header">
+      <h1>Check Splitter</h1>
+      <button id="new-check-btn" type="button" class="subtle">New</button>
+    </header>
+
+    <section class="card section" data-section="create" data-next="people">
+      <button type="button" class="section-toggle" aria-expanded="true" aria-controls="section-create">
+        <h2>Create Check</h2>
+        <span class="chevron">▾</span>
+      </button>
+      <div id="section-create" class="section-content">
+        <form id="item-form">
+          <table class="create-table">
+            <colgroup>
+              <col class="col-qty" />
+              <col class="col-desc" />
+              <col class="col-total" />
+              <col class="col-unit" />
+              <col class="col-remove" />
+            </colgroup>
+            <thead>
+              <tr><th>Qty</th><th>Description</th><th>Total</th><th>Unit</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input id="item-qty" class="inline-input inline-qty" type="number" inputmode="numeric" enterkeyhint="next" min="1" step="1" value="1" required /></td>
+                <td><input id="item-name" class="inline-input" type="text" enterkeyhint="next" placeholder="e.g. Nachos" required /></td>
+                <td><input id="item-price" class="inline-input inline-price" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="0.01" placeholder="e.g. 15.00" required /></td>
+                <td class="unit-cell muted">Auto</td>
+                <td></td>
+              </tr>
+            </tbody>
+            <tbody id="items-body"></tbody>
+          </table>
+          <button type="submit" class="cta-full">Add item</button>
+        </form>
+        <p id="item-error" class="error" aria-live="polite"></p>
+
+        <div class="totals">
+          <label>Tax <input id="tax-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 4.50" /></label>
+          <label>Tip <input id="tip-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 18.00" /></label>
+          <label>Other fees <input id="fee-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 3.00" /></label>
+        </div>
+        <div class="summary" id="check-summary"></div>
+        <div class="section-actions"><button type="button" class="subtle next-section">Next</button></div>
+      </div>
+    </section>
+
+    <section class="card section" data-section="people" data-next="assignments">
+      <button type="button" class="section-toggle" aria-expanded="false" aria-controls="section-people">
+        <h2>People</h2>
+        <span class="chevron">▸</span>
+      </button>
+      <div id="section-people" class="section-content hidden">
+        <form id="person-form" class="row compact">
+          <label>
+            Add person
+            <input id="person-name" type="text" placeholder="Jack" />
+          </label>
+          <button type="submit">Add</button>
+        </form>
+        <p id="person-error" class="error" aria-live="polite"></p>
+        <table>
+          <thead><tr><th>Person</th><th></th></tr></thead>
+          <tbody id="people-body"></tbody>
+        </table>
+        <label>
+          Payer
+          <select id="payer-select"></select>
+        </label>
+        <div class="section-actions"><button type="button" class="subtle next-section">Next</button></div>
+      </div>
+    </section>
+
+    <section class="card section" data-section="assignments" data-next="final">
+      <button type="button" class="section-toggle" aria-expanded="false" aria-controls="section-assignments">
+        <h2>Assign People to Items</h2>
+        <span class="chevron">▸</span>
+      </button>
+      <div id="section-assignments" class="section-content hidden">
+        <p class="muted">Equal split among selected people.</p>
+        <div id="assignment-list"></div>
+        <div class="section-actions"><button type="button" class="subtle next-section">Next</button></div>
+      </div>
+    </section>
+
+    <section class="card section" data-section="final">
+      <button type="button" class="section-toggle" aria-expanded="false" aria-controls="section-final">
+        <h2>Final Breakdown</h2>
+        <span class="chevron">▸</span>
+      </button>
+      <div id="section-final" class="section-content hidden">
+        <div id="final-breakdown-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

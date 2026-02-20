@@ -41,22 +41,22 @@ input[readonly] { background: #f8fafc; color: #344054; }
 ul { margin: .25rem 0; padding-left: 1.2rem; }
 
 .inline-input { width: 100%; min-width: 0; }
-.inline-qty { max-width: 58px; }
-.inline-price { max-width: 90px; }
+.inline-qty { max-width: 52px; }
+.inline-price { max-width: 81px; }
 
 ::placeholder { color: #98a2b3; font-style: italic; }
 
 
 .create-table { table-layout: fixed; }
  .col-desc { width: auto; }
-.col-qty { width: 62px; }
-.col-total { width: 92px; }
+.col-qty { width: 56px; }
+.col-total { width: 83px; }
 .col-remove { width: 42px; }
 
 @media (max-width: 640px) {
   .container { padding: 0 .65rem 2rem; }
   th, td { padding: .35rem .25rem; }
-  .inline-qty { max-width: 54px; }
-  .inline-price { max-width: 84px; }
+  .inline-qty { max-width: 49px; }
+  .inline-price { max-width: 76px; }
   .create-table th { font-size: .95rem; white-space: nowrap; }
 }

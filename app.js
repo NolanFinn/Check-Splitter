@@ -59,13 +59,13 @@ function bindEvents() {
   el.itemName.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      el.itemQty.focus();
+      el.itemPrice.focus();
     }
   });
   el.itemQty.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      el.itemPrice.focus();
+      el.itemName.focus();
     }
   });
   el.itemPrice.addEventListener('blur', () => {

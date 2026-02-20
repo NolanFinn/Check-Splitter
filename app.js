@@ -232,12 +232,39 @@ function renderItems() {
   state.items.forEach((item) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${item.quantity}</td>
-      <td>${item.description}</td>
-      <td>$${money(item.price)}</td>
-      <td>$${money(item.price / item.quantity)}</td>
+      <td><input class="inline-input inline-qty" type="number" inputmode="numeric" min="1" step="1" value="${item.quantity}" aria-label="Quantity for ${item.description}" /></td>
+      <td><input class="inline-input" type="text" value="${escapeHtml(item.description)}" aria-label="Description for item" /></td>
+      <td><input class="inline-input inline-price" type="number" inputmode="decimal" min="0" step="0.01" value="${money(item.price)}" aria-label="Price for ${item.description}" /></td>
+      <td class="unit-cell">$${money(item.price / item.quantity)}</td>
       <td><button type="button" class="icon-btn remove" aria-label="Remove item">×</button></td>
     `;
+
+    const qtyInput = tr.querySelector('.inline-qty');
+    const descInput = tr.querySelector('td:nth-child(2) .inline-input');
+    const priceInput = tr.querySelector('.inline-price');
+    const unitCell = tr.querySelector('.unit-cell');
+
+    const syncItem = () => {
+      const nextQty = Number(qtyInput.value);
+      const nextDesc = descInput.value.trim();
+      const nextPrice = Number(priceInput.value);
+
+      if (Number.isInteger(nextQty) && nextQty > 0) item.quantity = nextQty;
+      if (nextDesc) item.description = nextDesc;
+      if (Number.isFinite(nextPrice) && nextPrice >= 0) item.price = toMoney(nextPrice);
+
+      unitCell.textContent = `$${money(item.price / item.quantity)}`;
+      persist();
+      renderDerived();
+    };
+
+    qtyInput.addEventListener('change', syncItem);
+    qtyInput.addEventListener('blur', syncItem);
+    descInput.addEventListener('change', syncItem);
+    descInput.addEventListener('blur', syncItem);
+    priceInput.addEventListener('change', syncItem);
+    priceInput.addEventListener('blur', syncItem);
+
     tr.querySelector('button').addEventListener('click', () => {
       state.items = state.items.filter((i) => i.id !== item.id);
       delete state.assignments[item.id];
@@ -247,6 +274,7 @@ function renderItems() {
     el.itemsBody.appendChild(tr);
   });
 }
+
 
 function renderPeople() {
   el.peopleBody.innerHTML = '';
@@ -443,6 +471,15 @@ function renderFinalBreakdown(results) {
 
     el.finalBreakdownList.appendChild(row);
   });
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 function toMoney(value) {

@@ -37,3 +37,8 @@ th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #e8ecf4; }
 .pill.active { background: #155eef; border-color: #155eef; color: #fff; }
 .muted { color: #667085; margin: .25rem 0 .75rem; }
 ul { margin: .25rem 0; padding-left: 1.2rem; }
+
+.inline-input { width: 100%; min-width: 0; }
+.inline-qty { max-width: 84px; }
+.inline-price { max-width: 110px; }
+.unit-cell { white-space: nowrap; }

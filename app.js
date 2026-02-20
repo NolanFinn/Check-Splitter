@@ -14,10 +14,10 @@ let state = loadState();
 
 const el = {
   newCheckBtn: document.querySelector('#new-check-btn'),
-  addItemBtn: document.querySelector('#add-item-btn'),
-  newItemName: document.querySelector('#new-item-name'),
-  newItemQty: document.querySelector('#new-item-qty'),
-  newItemPrice: document.querySelector('#new-item-price'),
+  itemForm: document.querySelector('#item-form'),
+  itemName: document.querySelector('#item-name'),
+  itemQty: document.querySelector('#item-qty'),
+  itemPrice: document.querySelector('#item-price'),
   itemError: document.querySelector('#item-error'),
   itemsBody: document.querySelector('#items-body'),
   taxAmount: document.querySelector('#tax-amount'),
@@ -40,24 +40,30 @@ render();
 function bindEvents() {
   el.newCheckBtn.addEventListener('click', resetCheck);
 
-  el.addItemBtn.addEventListener('click', addItem);
+  el.itemForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    addItem();
+  });
+  el.itemForm.addEventListener('focusout', (event) => {
+    const next = event.relatedTarget;
+    if (next && el.itemForm.contains(next)) return;
 
-  el.newItemName.addEventListener('keydown', (event) => {
+    window.setTimeout(() => {
+      if (!el.itemForm.contains(document.activeElement)) {
+        autoSaveItemIfComplete();
+      }
+    }, 0);
+  });
+  el.itemName.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      el.newItemQty.focus();
+      el.itemQty.focus();
     }
   });
-  el.newItemQty.addEventListener('keydown', (event) => {
+  el.itemQty.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      el.newItemPrice.focus();
-    }
-  });
-  el.newItemPrice.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      addItem();
+      el.itemPrice.focus();
     }
   });
 
@@ -95,7 +101,7 @@ function resetCheck() {
   persist();
   render();
   setSectionOpen('create', true);
-  el.newItemName.focus();
+  el.itemName.focus();
 }
 
 function setupSectionControls() {
@@ -130,10 +136,17 @@ function setSectionOpen(sectionName, open) {
   content.classList.toggle('hidden', !open);
 }
 
+function autoSaveItemIfComplete() {
+  if (!el.itemName.value.trim()) return;
+  if (el.itemQty.value.trim() === '') return;
+  if (el.itemPrice.value.trim() === '') return;
+  addItem();
+}
+
 function addItem() {
-  const description = el.newItemName.value.trim();
-  const quantity = Number(el.newItemQty.value);
-  const price = Number(el.newItemPrice.value);
+  const description = el.itemName.value.trim();
+  const quantity = Number(el.itemQty.value);
+  const price = Number(el.itemPrice.value);
 
   if (!description) return setItemError('Please enter an item name before saving.');
   if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
@@ -147,13 +160,12 @@ function addItem() {
   state.items.push({ id, description, quantity, price: toMoney(price) });
   state.assignments[id] = [...state.people];
 
-  el.newItemName.value = '';
-  el.newItemQty.value = '1';
-  el.newItemPrice.value = '';
+  el.itemForm.reset();
+  el.itemQty.value = '1';
   setItemError('');
   persist();
   render();
-  el.newItemName.focus();
+  el.itemName.focus();
 }
 
 function addPerson() {
@@ -220,49 +232,12 @@ function renderItems() {
   state.items.forEach((item) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input type="number" class="inline-edit inline-qty" min="1" step="1" inputmode="numeric" value="${item.quantity}" aria-label="Edit quantity for ${item.description}" /></td>
-      <td><input type="text" class="inline-edit" value="${escapeHtml(item.description)}" aria-label="Edit description for ${item.description}" /></td>
-      <td><input type="number" class="inline-edit inline-price" min="0" step="0.01" inputmode="decimal" value="${money(item.price)}" aria-label="Edit total price for ${item.description}" /></td>
+      <td>${item.quantity}</td>
+      <td>${item.description}</td>
+      <td>$${money(item.price)}</td>
       <td>$${money(item.price / item.quantity)}</td>
       <td><button type="button" class="icon-btn remove" aria-label="Remove item">×</button></td>
     `;
-
-    const qtyInput = tr.querySelector('.inline-qty');
-    qtyInput.addEventListener('change', () => {
-      const qty = Number(qtyInput.value);
-      if (!Number.isInteger(qty) || qty <= 0) {
-        qtyInput.value = String(item.quantity);
-        return;
-      }
-      item.quantity = qty;
-      persist();
-      render();
-    });
-
-    const descriptionInput = tr.querySelector('input[type="text"]');
-    descriptionInput.addEventListener('change', () => {
-      const description = descriptionInput.value.trim();
-      if (!description) {
-        descriptionInput.value = item.description;
-        return;
-      }
-      item.description = description;
-      persist();
-      render();
-    });
-
-    const priceInput = tr.querySelector('.inline-price');
-    priceInput.addEventListener('change', () => {
-      const price = Number(priceInput.value);
-      if (!Number.isFinite(price) || price < 0) {
-        priceInput.value = money(item.price);
-        return;
-      }
-      item.price = toMoney(price);
-      persist();
-      render();
-    });
-
     tr.querySelector('button').addEventListener('click', () => {
       state.items = state.items.filter((i) => i.id !== item.id);
       delete state.assignments[item.id];
@@ -341,16 +316,7 @@ function renderAssignments() {
 function selectionSummary(selected) {
   if (!selected || selected.length === 0) return 'Unassigned';
   if (selected.length === 1) return selected[0];
-  return `${selected.length} 👥`;
-}
-
-function escapeHtml(value) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+  return 'Multiple';
 }
 
 function calculateShares() {

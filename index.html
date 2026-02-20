@@ -19,6 +19,21 @@
         <span class="chevron">▾</span>
       </button>
       <div id="section-create" class="section-content">
+        <form id="item-form" class="row">
+          <label>
+            Item name
+            <input id="item-name" type="text" enterkeyhint="next" placeholder="Nachos" required />
+          </label>
+          <label>
+            Quantity
+            <input id="item-qty" type="number" inputmode="numeric" enterkeyhint="next" min="1" step="1" value="1" required />
+          </label>
+          <label>
+            Price (total)
+            <input id="item-price" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="0.01" placeholder="15.00" required />
+          </label>
+          <button type="submit" class="cta-full">Add item</button>
+        </form>
         <p id="item-error" class="error" aria-live="polite"></p>
 
         <table>
@@ -26,18 +41,7 @@
             <tr><th>Qty</th><th>Description</th><th>Total</th><th>Unit</th><th></th></tr>
           </thead>
           <tbody id="items-body"></tbody>
-          <tfoot>
-            <tr>
-              <td><input id="new-item-qty" type="number" class="inline-edit inline-qty" inputmode="numeric" enterkeyhint="next" min="1" step="1" value="1" aria-label="New item quantity" /></td>
-              <td><input id="new-item-name" type="text" class="inline-edit" enterkeyhint="next" placeholder="Item name" aria-label="New item description" /></td>
-              <td><input id="new-item-price" type="number" class="inline-edit inline-price" inputmode="decimal" enterkeyhint="done" min="0" step="0.01" placeholder="0.00" aria-label="New item total price" /></td>
-              <td class="muted">auto</td>
-              <td></td>
-            </tr>
-          </tfoot>
         </table>
-
-        <button id="add-item-btn" type="button" class="cta-full">Add item</button>
 
         <div class="totals">
           <label>Tax amount <input id="tax-amount" type="number" inputmode="decimal" min="0" step="0.01" value="0" /></label>

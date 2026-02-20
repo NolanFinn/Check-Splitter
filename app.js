@@ -26,7 +26,7 @@ const el = {
   personForm: document.querySelector('#person-form'),
   personName: document.querySelector('#person-name'),
   personError: document.querySelector('#person-error'),
-  peopleList: document.querySelector('#people-list'),
+  peopleBody: document.querySelector('#people-body'),
   payerSelect: document.querySelector('#payer-select'),
   assignmentList: document.querySelector('#assignment-list'),
   settlementList: document.querySelector('#settlement-list'),
@@ -42,6 +42,18 @@ function bindEvents() {
     event.preventDefault();
     addItem();
   });
+  el.itemName.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      el.itemQty.focus();
+    }
+  });
+  el.itemQty.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      el.itemPrice.focus();
+    }
+  });
 
   for (const field of [el.taxAmount, el.tipAmount, el.feeAmount]) {
     field.addEventListener('input', () => {
@@ -49,9 +61,7 @@ function bindEvents() {
       state.tipAmount = toMoney(el.tipAmount.value);
       state.feeAmount = toMoney(el.feeAmount.value);
       persist();
-      renderSummary(calculateShares());
-      renderSettlement(calculateShares());
-      renderPersonDetails(calculateShares());
+      renderDerived();
     });
   }
 
@@ -72,13 +82,9 @@ function bindEvents() {
 function setupSectionControls() {
   el.sections.forEach((section) => {
     const toggle = section.querySelector('.section-toggle');
-    const content = section.querySelector('.section-content');
-    const chevron = section.querySelector('.chevron');
     const sectionName = section.dataset.section;
-
     toggle.addEventListener('click', () => {
-      const expanded = toggle.getAttribute('aria-expanded') === 'true';
-      setSectionOpen(sectionName, !expanded);
+      setSectionOpen(sectionName, toggle.getAttribute('aria-expanded') !== 'true');
     });
 
     const nextBtn = section.querySelector('.next-section');
@@ -87,20 +93,11 @@ function setupSectionControls() {
         const next = section.dataset.next;
         if (!next) return;
         setSectionOpen(next, true);
-        const nextEl = document.querySelector(`.section[data-section="${next}"]`);
-        if (nextEl) nextEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.querySelector(`.section[data-section="${next}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }
 
-    if (sectionName !== 'create') {
-      content.classList.add('hidden');
-      toggle.setAttribute('aria-expanded', 'false');
-      chevron.textContent = '▸';
-    } else {
-      content.classList.remove('hidden');
-      toggle.setAttribute('aria-expanded', 'true');
-      chevron.textContent = '▾';
-    }
+    setSectionOpen(sectionName, sectionName === 'create');
   });
 }
 
@@ -109,11 +106,9 @@ function setSectionOpen(sectionName, open) {
   if (!section) return;
   const toggle = section.querySelector('.section-toggle');
   const content = section.querySelector('.section-content');
-  const chevron = section.querySelector('.chevron');
-
+  section.querySelector('.chevron').textContent = open ? '▾' : '▸';
   toggle.setAttribute('aria-expanded', String(open));
   content.classList.toggle('hidden', !open);
-  chevron.textContent = open ? '▾' : '▸';
 }
 
 function addItem() {
@@ -129,8 +124,9 @@ function addItem() {
     return setItemError('Price must be a valid non-negative amount.');
   }
 
-  state.items.push({ id: crypto.randomUUID(), description, quantity, price: toMoney(price) });
-  state.assignments[state.items[state.items.length - 1].id] = [...state.people];
+  const id = crypto.randomUUID();
+  state.items.push({ id, description, quantity, price: toMoney(price) });
+  state.assignments[id] = [...state.people];
 
   el.itemForm.reset();
   el.itemQty.value = '1';
@@ -138,10 +134,6 @@ function addItem() {
   persist();
   render();
   el.itemName.focus();
-}
-
-function setItemError(message) {
-  el.itemError.textContent = message;
 }
 
 function addPerson() {
@@ -156,15 +148,36 @@ function addPerson() {
   }
 
   state.people.push(name);
-  for (const item of state.items) {
-    if (!state.assignments[item.id]) state.assignments[item.id] = [];
-  }
-
   el.personForm.reset();
   el.personError.textContent = '';
   persist();
   render();
   el.personName.focus();
+}
+
+function removePerson(person) {
+  if (!state.people.includes(person)) return;
+  if (state.people.length <= 1) {
+    el.personError.textContent = 'At least one person is required.';
+    return;
+  }
+
+  state.people = state.people.filter((p) => p !== person);
+  if (state.payer === person) {
+    state.payer = state.people[0];
+  }
+
+  state.items.forEach((item) => {
+    const selected = state.assignments[item.id] || [];
+    state.assignments[item.id] = selected.filter((p) => p !== person);
+  });
+
+  persist();
+  render();
+}
+
+function setItemError(message) {
+  el.itemError.textContent = message;
 }
 
 function render() {
@@ -175,7 +188,10 @@ function render() {
   renderItems();
   renderPeople();
   renderAssignments();
+  renderDerived();
+}
 
+function renderDerived() {
   const results = calculateShares();
   renderSummary(results);
   renderSettlement(results);
@@ -191,27 +207,25 @@ function renderItems() {
       <td>${item.description}</td>
       <td>$${money(item.price)}</td>
       <td>$${money(item.price / item.quantity)}</td>
-      <td><button type="button" class="remove" data-id="${item.id}">Remove</button></td>
+      <td><button type="button" class="remove">Remove</button></td>
     `;
-
     tr.querySelector('button').addEventListener('click', () => {
       state.items = state.items.filter((i) => i.id !== item.id);
       delete state.assignments[item.id];
       persist();
       render();
     });
-
     el.itemsBody.appendChild(tr);
   });
 }
 
 function renderPeople() {
-  el.peopleList.innerHTML = '';
+  el.peopleBody.innerHTML = '';
   state.people.forEach((person) => {
-    const chip = document.createElement('span');
-    chip.className = 'chip';
-    chip.textContent = person;
-    el.peopleList.appendChild(chip);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${person}</td><td><button type="button" class="remove">Remove</button></td>`;
+    tr.querySelector('button').addEventListener('click', () => removePerson(person));
+    el.peopleBody.appendChild(tr);
   });
 
   el.payerSelect.innerHTML = state.people
@@ -221,32 +235,51 @@ function renderPeople() {
 
 function renderAssignments() {
   el.assignmentList.innerHTML = '';
-  state.items.forEach((item) => {
-    const wrap = document.createElement('div');
-    wrap.className = 'assignment';
-    wrap.innerHTML = `<strong>${item.quantity} ${item.description} ($${money(item.price)})</strong>`;
 
-    const checks = document.createElement('div');
-    checks.className = 'people-checks';
+  state.items.forEach((item) => {
+    const selected = state.assignments[item.id] || [];
+    const summary = selected.length === 0 ? 'Unassigned' : selected.length === 1 ? selected[0] : 'Multiple';
+
+    const wrap = document.createElement('article');
+    wrap.className = 'assignment-item';
+    wrap.innerHTML = `
+      <button type="button" class="assignment-header" aria-expanded="false">
+        <span>${item.description} · $${money(item.price)}</span>
+        <span class="meta">${summary} ▸</span>
+      </button>
+      <div class="assignment-content hidden">
+        <div class="pill-wrap"></div>
+      </div>
+    `;
+
+    const header = wrap.querySelector('.assignment-header');
+    const content = wrap.querySelector('.assignment-content');
+    const meta = wrap.querySelector('.meta');
+    const pillWrap = wrap.querySelector('.pill-wrap');
+
+    header.addEventListener('click', () => {
+      const open = header.getAttribute('aria-expanded') !== 'true';
+      header.setAttribute('aria-expanded', String(open));
+      content.classList.toggle('hidden', !open);
+      meta.textContent = `${summary} ${open ? '▾' : '▸'}`;
+    });
 
     state.people.forEach((person) => {
-      const checked = (state.assignments[item.id] || []).includes(person);
-      const id = `${item.id}-${person}`;
-      const label = document.createElement('label');
-      label.setAttribute('for', id);
-      label.innerHTML = `<input id="${id}" type="checkbox" ${checked ? 'checked' : ''} /> ${person}`;
-      label.querySelector('input').addEventListener('change', (event) => {
-        const selected = new Set(state.assignments[item.id] || []);
-        if (event.target.checked) selected.add(person);
-        else selected.delete(person);
-        state.assignments[item.id] = [...selected];
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `pill ${(state.assignments[item.id] || []).includes(person) ? 'active' : ''}`;
+      btn.textContent = person;
+      btn.addEventListener('click', () => {
+        const current = new Set(state.assignments[item.id] || []);
+        if (current.has(person)) current.delete(person);
+        else current.add(person);
+        state.assignments[item.id] = [...current];
         persist();
         render();
       });
-      checks.appendChild(label);
+      pillWrap.appendChild(btn);
     });
 
-    wrap.appendChild(checks);
     el.assignmentList.appendChild(wrap);
   });
 }
@@ -257,8 +290,8 @@ function calculateShares() {
   const tipCents = Math.round(state.tipAmount * 100);
   const feeCents = Math.round(state.feeAmount * 100);
 
-  const baseByPerson = Object.fromEntries(state.people.map((person) => [person, 0]));
-  const itemBreakdown = Object.fromEntries(state.people.map((person) => [person, []]));
+  const baseByPerson = Object.fromEntries(state.people.map((p) => [p, 0]));
+  const itemBreakdown = Object.fromEntries(state.people.map((p) => [p, []]));
 
   state.items.forEach((item) => {
     const selected = state.assignments[item.id] || [];
@@ -273,32 +306,26 @@ function calculateShares() {
 
     selected.forEach((person) => {
       baseByPerson[person] += floor;
+      itemBreakdown[person].push({ label: `${item.description} share`, cents: floor });
     });
 
-    let remainder = total - floor * selected.length;
+    const remainder = total - floor * selected.length;
     for (let i = 0; i < remainder; i += 1) {
-      baseByPerson[fractions[i].person] += 1;
+      const person = fractions[i].person;
+      baseByPerson[person] += 1;
+      itemBreakdown[person][itemBreakdown[person].length - 1].cents += 1;
     }
-
-    selected.forEach((person) => {
-      const assignedSoFar = itemBreakdown[person].reduce((sum, detail) => sum + detail.cents, 0);
-      const portion = baseByPerson[person] - assignedSoFar;
-      itemBreakdown[person].push({ label: `${item.description} share`, cents: portion });
-    });
   });
 
-  const participants = state.people.filter((person) => baseByPerson[person] > 0);
-  const addOnByPerson = Object.fromEntries(state.people.map((person) => [person, { tax: 0, tip: 0, fee: 0 }]));
+  const participants = state.people.filter((p) => baseByPerson[p] > 0);
+  const addOnByPerson = Object.fromEntries(state.people.map((p) => [p, { tax: 0, tip: 0, fee: 0 }]));
 
-  distributeProportionally(participants, baseByPerson, taxCents, (person, cents) => (addOnByPerson[person].tax += cents));
-  distributeProportionally(participants, baseByPerson, tipCents, (person, cents) => (addOnByPerson[person].tip += cents));
-  distributeProportionally(participants, baseByPerson, feeCents, (person, cents) => (addOnByPerson[person].fee += cents));
+  distributeProportionally(participants, baseByPerson, taxCents, (p, cents) => (addOnByPerson[p].tax += cents));
+  distributeProportionally(participants, baseByPerson, tipCents, (p, cents) => (addOnByPerson[p].tip += cents));
+  distributeProportionally(participants, baseByPerson, feeCents, (p, cents) => (addOnByPerson[p].fee += cents));
 
   const totalByPerson = Object.fromEntries(
-    state.people.map((person) => [
-      person,
-      baseByPerson[person] + addOnByPerson[person].tax + addOnByPerson[person].tip + addOnByPerson[person].fee
-    ])
+    state.people.map((p) => [p, baseByPerson[p] + addOnByPerson[p].tax + addOnByPerson[p].tip + addOnByPerson[p].fee])
   );
 
   return {
@@ -316,7 +343,7 @@ function calculateShares() {
 
 function distributeProportionally(participants, baseByPerson, totalCents, assignFn) {
   if (participants.length === 0 || totalCents === 0) return;
-  const baseTotal = participants.reduce((sum, person) => sum + baseByPerson[person], 0);
+  const baseTotal = participants.reduce((sum, p) => sum + baseByPerson[p], 0);
   if (baseTotal === 0) return;
 
   const allocations = participants.map((person) => {
@@ -325,11 +352,9 @@ function distributeProportionally(participants, baseByPerson, totalCents, assign
     return { person, floor, frac: raw - floor };
   });
 
-  allocations.forEach((entry) => assignFn(entry.person, entry.floor));
-
-  let remaining = totalCents - allocations.reduce((sum, entry) => sum + entry.floor, 0);
+  allocations.forEach((a) => assignFn(a.person, a.floor));
+  const remaining = totalCents - allocations.reduce((sum, a) => sum + a.floor, 0);
   allocations.sort((a, b) => b.frac - a.frac || a.person.localeCompare(b.person));
-
   for (let i = 0; i < remaining; i += 1) {
     assignFn(allocations[i].person, 1);
   }
@@ -351,31 +376,27 @@ function renderSettlement(results) {
     .filter((person) => person !== payer && results.totalByPerson[person] > 0)
     .map((person) => `<li>${person} owes ${payer} <strong>$${moneyFromCents(results.totalByPerson[person])}</strong></li>`)
     .join('');
-
   el.settlementList.innerHTML = lines ? `<ul>${lines}</ul>` : '<p class="muted">No one owes anything yet.</p>';
 }
 
 function renderPersonDetails(results) {
   el.personDetailList.innerHTML = '';
-
   state.people.forEach((person) => {
     const card = document.createElement('article');
     card.className = 'person-card';
-
-    const details = results.itemBreakdown[person] || [];
-    const itemsMarkup = details.length
-      ? `<ul>${details.map((item) => `<li>${item.label}: $${moneyFromCents(item.cents)}</li>`).join('')}</ul>`
+    const items = results.itemBreakdown[person] || [];
+    const itemLines = items.length
+      ? `<ul>${items.map((item) => `<li>${item.label}: $${moneyFromCents(item.cents)}</li>`).join('')}</ul>`
       : '<p class="muted">No items assigned.</p>';
 
     card.innerHTML = `
       <h3>${person}</h3>
-      ${itemsMarkup}
+      ${itemLines}
       <p>Tax: $${moneyFromCents(results.addOnByPerson[person].tax)}</p>
       <p>Tip: $${moneyFromCents(results.addOnByPerson[person].tip)}</p>
       <p>Fees: $${moneyFromCents(results.addOnByPerson[person].fee)}</p>
       <p><strong>Total: $${moneyFromCents(results.totalByPerson[person])}</strong></p>
     `;
-
     el.personDetailList.appendChild(card);
   });
 }

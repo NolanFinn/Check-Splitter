@@ -19,15 +19,15 @@
         <form id="item-form" class="row">
           <label>
             Item name
-            <input id="item-name" type="text" placeholder="Nachos" required />
+            <input id="item-name" type="text" enterkeyhint="next" placeholder="Nachos" required />
           </label>
           <label>
             Quantity
-            <input id="item-qty" type="number" inputmode="numeric" min="1" step="1" value="1" required />
+            <input id="item-qty" type="number" inputmode="numeric" enterkeyhint="next" min="1" step="1" value="1" required />
           </label>
           <label>
             Price (total)
-            <input id="item-price" type="number" inputmode="decimal" min="0" step="0.01" placeholder="15.00" required />
+            <input id="item-price" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="0.01" placeholder="15.00" required />
           </label>
           <button type="submit">Add item</button>
         </form>
@@ -64,7 +64,10 @@
           <button type="submit">Add</button>
         </form>
         <p id="person-error" class="error" aria-live="polite"></p>
-        <div id="people-list" class="chips"></div>
+        <table>
+          <thead><tr><th>Person</th><th></th></tr></thead>
+          <tbody id="people-body"></tbody>
+        </table>
         <label>
           Payer
           <select id="payer-select"></select>

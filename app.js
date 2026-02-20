@@ -211,9 +211,9 @@ function setItemError(message) {
 }
 
 function render() {
-  el.taxAmount.value = state.taxAmount === 0 ? '0' : String(state.taxAmount);
-  el.tipAmount.value = state.tipAmount === 0 ? '0' : String(state.tipAmount);
-  el.feeAmount.value = state.feeAmount === 0 ? '0' : String(state.feeAmount);
+  el.taxAmount.value = state.taxAmount === 0 ? '' : String(state.taxAmount);
+  el.tipAmount.value = state.tipAmount === 0 ? '' : String(state.tipAmount);
+  el.feeAmount.value = state.feeAmount === 0 ? '' : String(state.feeAmount);
 
   renderItems();
   renderPeople();

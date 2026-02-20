@@ -19,34 +19,30 @@
         <span class="chevron">▾</span>
       </button>
       <div id="section-create" class="section-content">
-        <form id="item-form" class="row">
-          <label>
-            Item name
-            <input id="item-name" type="text" enterkeyhint="next" placeholder="Nachos" required />
-          </label>
-          <label>
-            Quantity
-            <input id="item-qty" type="number" inputmode="numeric" enterkeyhint="next" min="1" step="1" value="1" required />
-          </label>
-          <label>
-            Price (total)
-            <input id="item-price" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="0.01" placeholder="15.00" required />
-          </label>
+        <form id="item-form">
+          <table>
+            <thead>
+              <tr><th>Qty</th><th>Description</th><th>Total</th><th>Unit</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input id="item-qty" class="inline-input inline-qty" type="number" inputmode="numeric" enterkeyhint="next" min="1" step="1" value="1" required /></td>
+                <td><input id="item-name" class="inline-input" type="text" enterkeyhint="next" placeholder="e.g. Nachos" required /></td>
+                <td><input id="item-price" class="inline-input inline-price" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="0.01" placeholder="e.g. 15.00" required /></td>
+                <td class="unit-cell muted">Auto</td>
+                <td></td>
+              </tr>
+            </tbody>
+            <tbody id="items-body"></tbody>
+          </table>
           <button type="submit" class="cta-full">Add item</button>
         </form>
         <p id="item-error" class="error" aria-live="polite"></p>
 
-        <table>
-          <thead>
-            <tr><th>Qty</th><th>Description</th><th>Total</th><th>Unit</th><th></th></tr>
-          </thead>
-          <tbody id="items-body"></tbody>
-        </table>
-
         <div class="totals">
-          <label>Tax amount <input id="tax-amount" type="number" inputmode="decimal" min="0" step="0.01" value="0" /></label>
-          <label>Tip amount <input id="tip-amount" type="number" inputmode="decimal" min="0" step="0.01" value="0" /></label>
-          <label>Other fees <input id="fee-amount" type="number" inputmode="decimal" min="0" step="0.01" value="0" /></label>
+          <label>Tax <input id="tax-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 4.50" /></label>
+          <label>Tip <input id="tip-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 18.00" /></label>
+          <label>Other fees <input id="fee-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 3.00" /></label>
         </div>
         <div class="summary" id="check-summary"></div>
         <div class="section-actions"><button type="button" class="subtle next-section">Next</button></div>
